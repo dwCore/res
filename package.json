@@ -1,0 +1,24 @@
+{
+  "name": "@dwcore/res",
+  "version": "0.1.1",
+  "description": "Library For Creating dPack Memory-Based Storage Instances With Random Entry.",
+  "contributors": [
+    "Jared Rice Sr. <jared@dwebs.io>",
+    "Distributed Webs Project, LLC. <labs@distributedwebs.org>"
+  ],
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "standard && tape test.js"
+  },
+  "dependencies": {
+    "inherits": "*"
+  },
+  "devDependencies": {
+    "standard": "*",
+    "tape": "*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
