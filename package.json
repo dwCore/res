@@ -1,6 +1,6 @@
 {
   "name": "@dwcore/res",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Library For Creating dPack Memory-Based Storage Instances With Random Entry.",
   "contributors": [
     "Jared Rice Sr. <jared@dwebs.io>",
