@@ -7,10 +7,10 @@ var NOT_DELETABLE = defaultImpl(new Error('Not deletable'))
 var NOT_STATABLE = defaultImpl(new Error('Not statable'))
 var NO_OPEN_READABLE = defaultImpl(new Error('No readonly open'))
 
-module.exports = DWRES
+module.exports = RandomAccess
 
-function DWRES (opts) {
-  if (!(this instanceof DWRES)) return new DWRES(opts)
+function RandomAccess (opts) {
+  if (!(this instanceof RandomAccess)) return new RandomAccess(opts)
   events.EventEmitter.call(this)
 
   this._queued = []
@@ -39,62 +39,62 @@ function DWRES (opts) {
   this.statable = this._stat !== NOT_STATABLE
 }
 
-inherits(DWRES, events.EventEmitter)
+inherits(RandomAccess, events.EventEmitter)
 
-DWRES.prototype.open = function (cb) {
+RandomAccess.prototype.open = function (cb) {
   if (!cb) cb = noop
   if (this.opened && !this._needsOpen) return process.nextTick(cb, null)
   queueAndRun(this, new Request(this, 0, 0, 0, null, cb))
 }
 
-DWRES.prototype._open = defaultImpl(null)
-DWRES.prototype._openReadonly = NO_OPEN_READABLE
+RandomAccess.prototype._open = defaultImpl(null)
+RandomAccess.prototype._openReadonly = NO_OPEN_READABLE
 
-DWRES.prototype.read = function (offset, size, cb) {
+RandomAccess.prototype.read = function (offset, size, cb) {
   this.run(new Request(this, 1, offset, size, null, cb))
 }
 
-DWRES.prototype._read = NOT_READABLE
+RandomAccess.prototype._read = NOT_READABLE
 
-DWRES.prototype.write = function (offset, data, cb) {
+RandomAccess.prototype.write = function (offset, data, cb) {
   if (!cb) cb = noop
   openWritable(this)
   this.run(new Request(this, 2, offset, data.length, data, cb))
 }
 
-DWRES.prototype._write = NOT_WRITABLE
+RandomAccess.prototype._write = NOT_WRITABLE
 
-DWRES.prototype.del = function (offset, size, cb) {
+RandomAccess.prototype.del = function (offset, size, cb) {
   if (!cb) cb = noop
   openWritable(this)
   this.run(new Request(this, 3, offset, size, null, cb))
 }
 
-DWRES.prototype._del = NOT_DELETABLE
+RandomAccess.prototype._del = NOT_DELETABLE
 
-DWRES.prototype.stat = function (cb) {
+RandomAccess.prototype.stat = function (cb) {
   this.run(new Request(this, 4, 0, 0, null, cb))
 }
 
-DWRES.prototype._stat = NOT_STATABLE
+RandomAccess.prototype._stat = NOT_STATABLE
 
-DWRES.prototype.close = function (cb) {
+RandomAccess.prototype.close = function (cb) {
   if (!cb) cb = noop
   if (this.closed) return process.nextTick(cb, null)
   queueAndRun(this, new Request(this, 5, 0, 0, null, cb))
 }
 
-DWRES.prototype._close = defaultImpl(null)
+RandomAccess.prototype._close = defaultImpl(null)
 
-DWRES.prototype.destroy = function (cb) {
+RandomAccess.prototype.destroy = function (cb) {
   if (!cb) cb = noop
   if (!this.closed) this.close(noop)
   queueAndRun(this, new Request(this, 6, 0, 0, null, cb))
 }
 
-DWRES.prototype._destroy = defaultImpl(null)
+RandomAccess.prototype._destroy = defaultImpl(null)
 
-DWRES.prototype.run = function (req) {
+RandomAccess.prototype.run = function (req) {
   if (this._needsOpen) this.open(noop)
   if (this._queued.length) this._queued.push(req)
   else req._run()

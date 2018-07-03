@@ -1,4 +1,4 @@
-var DWRES = require('./')
+var DwRes = require('./')
 var fs = require('fs')
 
 var file = fileReader('index.js')
@@ -9,7 +9,7 @@ file.close()
 
 function fileReader (name) {
   var fd = 0
-  return DWRES({
+  return DwRes({
     open: function (req) {
       fs.open(name, 'r', function (err, res) {
         if (err) return req.callback(err)

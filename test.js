@@ -1,7 +1,7 @@
 var tape = require('tape')
 var DWRES = require('./')
 
-tape('DWRES Tests: dWeb File Simple Read', function (t) {
+tape('DWRES Core Tests: basic read', function (t) {
   t.plan(2 * 4 + 4)
 
   var expected = [Buffer.from('hi'), Buffer.from('ho')]
@@ -18,18 +18,18 @@ tape('DWRES Tests: dWeb File Simple Read', function (t) {
 
   t.ok(s.readable)
   t.notOk(s.writable)
-  t.notOk(s.removable)
+  t.notOk(s.deletable)
   t.notOk(s.statable)
   s.read(0, 2, ondata)
   s.read(0, 2, ondata)
 
   function ondata (err, data) {
-    t.error(err, 'DWRES Test Success! No Errors.')
+    t.error(err, 'no error')
     t.same(data, expected.shift())
   }
 })
 
-tape('DWRES Tests: dWeb File Simple Write', function (t) {
+tape('DWRES Core Tests: basic write', function (t) {
   t.plan(2 * 2 + 4)
 
   var expected = [Buffer.from('hi'), Buffer.from('ho')]
@@ -42,21 +42,21 @@ tape('DWRES Tests: dWeb File Simple Write', function (t) {
 
   t.notOk(s.readable)
   t.ok(s.writable)
-  t.notOk(s.removable)
+  t.notOk(s.deletable)
   t.notOk(s.statable)
-  s.write(0, Buffer.from('hi'), onWrite)
-  s.write(0, Buffer.from('ho'), onWrite)
+  s.write(0, Buffer.from('hi'), onwrite)
+  s.write(0, Buffer.from('ho'), onwrite)
 
-  function onWrite (err, write) {
-    t.error(err, 'DWRES Test Success! No Errors.')
+  function onwrite (err, write) {
+    t.error(err, 'no error')
   }
 })
 
-tape('DWRES Tests: dWeb File Simple Delete', function (t) {
+tape('DWRES Core Tests: basic del', function (t) {
   t.plan(2 + 2 * 3 + 4)
 
   var s = DWRES({
-    remove: function (req) {
+    del: function (req) {
       t.same(req.offset, 0)
       t.same(req.size, 2)
       req.callback(null)
@@ -65,18 +65,18 @@ tape('DWRES Tests: dWeb File Simple Delete', function (t) {
 
   t.notOk(s.readable)
   t.notOk(s.writable)
-  t.ok(s.removable)
+  t.ok(s.deletable)
   t.notOk(s.statable)
-  s.remove(0, 2, onremove)
-  s.remove(0, 2, onremove)
-  s.remove(0, 2) // cb is optional
+  s.del(0, 2, ondelete)
+  s.del(0, 2, ondelete)
+  s.del(0, 2) // cb is optional
 
-  function onremove (err) {
-    t.error(err, 'DWRES Test Success! No Errors.')
+  function ondelete (err) {
+    t.error(err, 'no error')
   }
 })
 
-tape('DWRES Tests: dWeb File Basic Stat', function (t) {
+tape('DWRES Core Tests: basic stat', function (t) {
   t.plan(2 * 2 + 4)
 
   var s = DWRES({
@@ -87,34 +87,34 @@ tape('DWRES Tests: dWeb File Basic Stat', function (t) {
 
   t.notOk(s.readable)
   t.notOk(s.writable)
-  t.notOk(s.removable)
+  t.notOk(s.deletable)
   t.ok(s.statable)
   s.stat(onstat)
   s.stat(onstat)
 
   function onstat (err, st) {
-    t.error(err, 'DWRES Test Success! No Errors.')
+    t.error(err, 'no error')
     t.same(st, {size: 42})
   }
 })
 
-tape('DWRES Tests: dWeb File With No Options (opts)', function (t) {
+tape('DWRES Core Tests: no opts', function (t) {
   var s = DWRES()
 
   t.notOk(s.readable)
   t.notOk(s.writable)
-  t.notOk(s.removable)
+  t.notOk(s.deletable)
   t.notOk(s.statable)
   t.end()
 })
 
-tape('DWRES Tests: dWeb File Only Opens Once With Many Open Calls', function (t) {
+tape('DWRES Core Tests: many open calls only trigger one _open', function (t) {
   t.plan(1)
 
   var s = DWRES({
     open: function (req) {
       process.nextTick(function () {
-        t.pass('DWRES Test Success! File Is Opening.')
+        t.pass('is opening')
         req.callback(null)
       })
     }
@@ -128,130 +128,130 @@ tape('DWRES Tests: dWeb File Only Opens Once With Many Open Calls', function (t)
   setImmediate(() => s.open())
 })
 
-tape('DWRES Tests: dWeb File Open Errors', function (t) {
+tape('DWRES Core Tests: open errors', function (t) {
   t.plan(3 + 2)
 
   var s = DWRES({
     open: function (req) {
-      t.pass('DWRES Test Success! File Opened.')
+      t.pass('in open')
       setImmediate(() => req.callback(new Error('nope')))
     },
     write: function (req) {
-      t.fail('DWRES Test Failed! Should Not Get Here!')
+      t.fail('should not get here')
       req.callback(null)
     }
   })
 
-  s.write(0, Buffer.from('hi'), onWrite)
-  s.write(0, Buffer.from('hi'), onWrite)
-  s.write(0, Buffer.from('hi'), onWrite)
+  s.write(0, Buffer.from('hi'), onwrite)
+  s.write(0, Buffer.from('hi'), onwrite)
+  s.write(0, Buffer.from('hi'), onwrite)
   s.open() // should try and open again
 
-  function onWrite (err) {
-    t.same(err, new Error('DWRES Test Failed! File Did Not Open!'))
+  function onwrite (err) {
+    t.same(err, new Error('Not opened'))
   }
 })
 
-tape('DWRES Tests: dWeb File Open Before Read', function (t) {
+tape('DWRES Core Tests: open before read', function (t) {
   t.plan(5 * 2 + 1 + 1)
 
   var open = false
   var s = DWRES({
     open: function (req) {
-      t.ok(!open, 'DWRES Test Success! File Only Opened Once.')
+      t.ok(!open, 'only open once')
       open = true
       req.callback(null)
     },
     read: function (req) {
-      t.ok(open, 'DWRES Test Success! File Is Open.')
+      t.ok(open, 'is open')
       req.callback(null, Buffer.from('hi'))
     }
   })
 
-  t.notOk(s.opened, 'DWRES Tests: dWeb File Opened But Property Not Set')
+  t.notOk(s.opened, 'opened property not set')
   s.read(0, 2, ondata)
   s.read(0, 2, ondata)
 
   function ondata (err, data) {
-    t.error(err, 'DWRES Test Failed!')
-    t.ok(open, 'DWRES Test Success! File Opened.')
-    t.ok(s.opened, 'DWRES Test Success! File Opened and Property Not Set.')
+    t.error(err, 'no error')
+    t.ok(open, 'is open')
+    t.ok(s.opened, 'opened property set')
     t.same(data, Buffer.from('hi'))
   }
 })
 
-tape('DWRES Tests: dWeb File Close', function (t) {
-  t.plan(6)
+tape('DWRES Core Tests: close', function (t) {
+  t.plan(7)
 
   var s = DWRES({
     close: function (req) {
-      t.pass('DWRES Test Success! File Closing.')
+      t.pass('closing')
       req.callback(null)
     }
   })
 
-  s.on('closed', () => t.pass('DWRES Test Success! Close Command Sent.'))
+  s.on('close', () => t.pass('close emitted'))
   s.open()
   s.close()
   s.close()
   s.close(function () {
-    t.pass('DWRES Test Success! File Called Callback.')
+    t.pass('calls the callback')
   })
 
-  s.read(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.stat(err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.remove(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
+  s.read(0, 10, err => t.same(err, new Error('Closed')))
+  s.stat(err => t.same(err, new Error('Closed')))
+  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('Closed')))
+  s.del(0, 10, err => t.same(err, new Error('Closed')))
 })
 
-tape('DWRES Tests: dWeb File Close Only If Open', function (t) {
+tape('DWRES Core Tests: close, no open', function (t) {
   t.plan(5)
 
   var s = DWRES({
-    close: req => t.fail('DWRES Test Failed! Only Close When Open!')
+    close: req => t.fail('only close if open')
   })
 
   s.close()
   s.close()
   s.close(function () {
-    t.pass('DWRES Test Success! File Called Callback.')
+    t.pass('calls the callback')
   })
 
-  s.read(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.stat(err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.remove(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
+  s.read(0, 10, err => t.same(err, new Error('Closed')))
+  s.stat(err => t.same(err, new Error('Closed')))
+  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('Closed')))
+  s.del(0, 10, err => t.same(err, new Error('Closed')))
 })
 
-tape('DWRES Tests: dWeb File Kill', function (t) {
-  t.plan(3)
+tape('DWRES Core Tests: destroy', function (t) {
+  t.plan(4)
 
   var s = DWRES({
-    open: req => t.fail('DWRES Test Failed! File Did Not Open!'),
+    open: req => t.fail('no open'),
     destroy: function (req) {
-      t.pass('DWRES Test Success! File Killed.')
+      t.pass('destroying')
       req.callback(null)
     }
   })
 
-  s.on('Kill', () => t.pass('destroy emitted'))
+  s.on('destroy', () => t.pass('destroy emitted'))
   s.destroy()
   s.destroy(function (err) {
-    t.error(err, 'DWRES Test Success! No Errors.')
-    t.pass('DWRES Test Success! File Callback Called.')
+    t.error(err, 'no error')
+    t.pass('calls the callback')
   })
 })
 
-tape('DWRES Tests: dWeb File Kill But Closes First', function (t) {
+tape('DWRES Core Tests: destroy closes first', function (t) {
   t.plan(2)
 
   var s = DWRES({
     close: function (req) {
-      t.pass('DWRES Test Success! File Closing.')
+      t.pass('closing')
       req.callback(null)
     },
     destroy: function (req) {
-      t.ok(s.closed, 'DWRES Test Success! File Is Closing')
+      t.ok(s.closed, 'is closed')
       req.callback(null)
     }
   })
@@ -260,16 +260,16 @@ tape('DWRES Tests: dWeb File Kill But Closes First', function (t) {
   s.destroy()
 })
 
-tape('DWRES Tests: dWeb File Kill With Explicit Close First', function (t) {
+tape('DWRES Core Tests: destroy with explicit close first', function (t) {
   t.plan(2)
 
   var s = DWRES({
     close: function (req) {
-      t.pass('DWRES Test Success! File Closing.')
+      t.pass('closing')
       req.callback(null)
     },
     destroy: function (req) {
-      t.ok(s.closed, 'DWRES Test Success! File Is Closing')
+      t.ok(s.closed, 'is closed')
       req.callback(null)
     }
   })
@@ -279,16 +279,16 @@ tape('DWRES Tests: dWeb File Kill With Explicit Close First', function (t) {
   s.destroy()
 })
 
-tape('DWRES Tests: dWeb File Open and Close', function (t) {
+tape('DWRES Core Tests: open and close', function (t) {
   t.plan(7)
 
   var s = DWRES({
     open: function (req) {
-      t.pass('DWRES Test Success! File Opening.')
+      t.pass('opening')
       req.callback(null)
     },
     close: function (req) {
-      t.pass('DWRES Test Success! File Closing.')
+      t.pass('closing')
       req.callback(null)
     }
   })
@@ -297,33 +297,33 @@ tape('DWRES Tests: dWeb File Open and Close', function (t) {
   s.close()
   s.close()
   s.close(function () {
-    t.pass('DWRES Test Success! File Callback Called.')
+    t.pass('calls the callback')
   })
 
-  s.read(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.stat(err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('dWeb MemFile Was Closed')))
-  s.remove(0, 10, err => t.same(err, new Error('dWeb MemFile Was Closed')))
+  s.read(0, 10, err => t.same(err, new Error('Closed')))
+  s.stat(err => t.same(err, new Error('Closed')))
+  s.write(0, Buffer.from('hi'), err => t.same(err, new Error('Closed')))
+  s.del(0, 10, err => t.same(err, new Error('Closed')))
 })
 
-tape('DWRES Tests: dWeb File Write and Close.', function (t) {
+tape('DWRES Core Tests: write and close', function (t) {
   t.plan(1 + 5 + 1 + 3)
 
-  var dPClosed = false
+  var closed = false
   var s = DWRES({
     open: function (req) {
-      t.pass('DWRES Test Success! File Opened.')
+      t.pass('opened')
       req.callback(null)
     },
     write: function (req) {
-      t.pass('DWRES Test Success! File Was Written To.')
+      t.pass('in write')
       process.nextTick(function () {
         req.callback(null)
       })
     },
     close: function (req) {
-      t.notOk(dPClosed, 'DWRES Test Failed! File Did Not Close!')
-      dPClosed = true
+      t.notOk(closed, 'not closed yet')
+      closed = true
       req.callback(null)
     }
   })
@@ -333,39 +333,39 @@ tape('DWRES Tests: dWeb File Write and Close.', function (t) {
   s.write(0, Buffer.from('hi'))
   s.write(0, Buffer.from('hi'))
   s.write(0, Buffer.from('hi'))
-  s.close(err => t.error(err, 'DWRES Test Success! No Errors.'))
-  s.close(err => t.error(err, 'DWRES Test Success! No Errors.'))
-  s.close(err => t.error(err, 'DWRES Test Success! No Errors.'))
+  s.close(err => t.error(err, 'no error'))
+  s.close(err => t.error(err, 'no error'))
+  s.close(err => t.error(err, 'no error'))
 })
 
-tape('DWRES Tests: dWeb File Open Read Only', function (t) {
+tape('DWRES Core Tests: open readonly', function (t) {
   t.plan(2)
 
   var s = DWRES({
-    open: () => t.fail('DWRES Test Failed: Did Not Open!'),
+    open: () => t.fail('no open'),
     openReadonly: function (req) {
-      t.pass('DWRES Test Success! File Opened.')
+      t.pass('open readonly')
       req.callback(null)
     },
     read: req => req.callback(null, Buffer.from('hi'))
   })
 
   s.open()
-  s.read(0, 10, err => t.error(err, 'DWRES Test Success! No Errors.'))
+  s.read(0, 10, err => t.error(err, 'no error'))
 })
 
-tape('DWRES Tests: dWeb File Open Read Only Then Write', function (t) {
+tape('DWRES Core Tests: open readonly and then write', function (t) {
   t.plan(4)
 
   var readonlyFirst = true
 
   var s = DWRES({
     open: function (req) {
-      t.notOk(readonlyFirst, 'DWRES Test Failed. Open Read Only First')
+      t.notOk(readonlyFirst, 'open readonly first')
       req.callback(null)
     },
     openReadonly: function (req) {
-      t.ok(readonlyFirst, 'DWRES Test Failed. Open Read Only First')
+      t.ok(readonlyFirst, 'open readonly first')
       readonlyFirst = false
       req.callback(null)
     },
@@ -374,28 +374,28 @@ tape('DWRES Tests: dWeb File Open Read Only Then Write', function (t) {
   })
 
   s.open()
-  s.read(0, 2, err => t.error(err, 'DWRES Test Success! No Errors.'))
-  s.write(0, Buffer.from('hi'), err => t.error(err, 'DWRES Test Success! No Errors.'))
+  s.read(0, 2, err => t.error(err, 'no error'))
+  s.write(0, Buffer.from('hi'), err => t.error(err, 'no error'))
 })
 
-tape('DWRES Tests: dWeb File Open ReadOnly Is Ignored When First Option Is Write', function (t) {
+tape('DWRES Core Tests: open readonly ignored when first op is write', function (t) {
   t.plan(3)
 
   var s = DWRES({
     open: function (req) {
-      t.pass('DWRES Test Success! dWeb File Should Open')
+      t.pass('should open')
       req.callback(null)
     },
-    openReadonly: req => t.fail('DWREST Test Failed: First Option Is A Write.'),
+    openReadonly: req => t.fail('first op is a write'),
     read: req => req.callback(null, Buffer.from('hi')),
     write: req => req.callback(null)
   })
 
-  s.write(0, Buffer.from('hi'), err => t.error(err, 'DWRES Test Success! No Errors.'))
-  s.read(0, 2, err => t.error(err, 'DWRES Test Success! No Errors.'))
+  s.write(0, Buffer.from('hi'), err => t.error(err, 'no error'))
+  s.read(0, 2, err => t.error(err, 'no error'))
 })
 
-tape('DWRES Tests: dWeb File Always Sync', function (t) {
+tape('DWRES Core Tests: always async', function (t) {
   var s = DWRES({
     read: req => req.callback(null, Buffer.from('hi'))
   })
@@ -404,12 +404,35 @@ tape('DWRES Tests: dWeb File Always Sync', function (t) {
     var sync = true
 
     s.read(0, 2, function (err, buf) {
-      t.error(err, 'DWRES Test Success! No Errors.')
+      t.error(err, 'no error')
       t.same(buf, Buffer.from('hi'))
       t.notOk(sync)
       t.end()
     })
 
     sync = false
+  })
+})
+
+tape('DWRES Core Tests: open error forwarded to dependents', function (t) {
+  var s = DWRES({
+    open: req => req.callback(new Error('Nope')),
+    read: req => req.callback(null, Buffer.from('hi')),
+    write: req => req.callback(null, null)
+  })
+
+  s.write(0, Buffer.from('hi'), function (err) {
+    t.ok(err)
+    t.same(err.message, 'Nope')
+  })
+
+  s.read(0, 2, function (err) {
+    t.ok(err)
+    t.same(err.message, 'Nope')
+  })
+
+  s.close(function (err) {
+    t.ok(!err)
+    t.end()
   })
 })
