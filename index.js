@@ -1,11 +1,11 @@
 var dwresEvents = require('events')
 var inherits = require('inherits')
 
-var DPACK_UNREADABLE = dPackDefaultImpl(new Error('dPack configuration does not allow for read permissions'))
-var DPACK_UNWRITABLE = dPackDefaultImpl(new Error('dPack configuration does not allow for write permissions'))
-var DPACK_UNREMOVABLE = dPackDefaultImpl(new Error('dPack cannot be removed!'))
-var DPACK_UNTRACKABLE = dPackDefaultImpl(new Error('dPack can not be tracked and stats are unable to be retrieved'))
-var DPACK_OPEN_READONLY = dPackDefaultImpl(new Error('dPack does not have read only open'))
+var DPACK_UNREADABLE = dWebDefaultImpl(new Error('dPack configuration does not allow for read permissions'))
+var DPACK_UNWRITABLE = dWebDefaultImpl(new Error('dPack configuration does not allow for write permissions'))
+var DPACK_UNREMOVABLE = dWebDefaultImpl(new Error('dPack cannot be removed!'))
+var DPACK_UNTRACKABLE = dWebDefaultImpl(new Error('dPack can not be tracked and stats are unable to be retrieved'))
+var DPACK_OPEN_READONLY = dWebDefaultImpl(new Error('dPack does not have read only open'))
 
 module.exports = DWebRandEntry
 
@@ -16,85 +16,85 @@ function DWebRandEntry (opts) {
   this._queued = []
   this._pending = 0
 
-  this._dPackNeedsOpen = true
-  this.dPackOpened = false
-  this.dPackClosed = false
+  this._dWebNeedsOpen = true
+  this.dWebOpened = false
+  this.dWebClosed = false
 
   if (opts) {
-    if (opts.dPackOpenReadonly) this._dPackOpenReadonly = opts.dPackOpenReadonly
-    if (opts.dPackOpen) this._dPackOpen = opts.dPackOpen
-    if (opts.dPackRead) this._dPackRead = opts.dPackRead
-    if (opts.dPackWrite) this._dPackWrite = opts.dPackWrite
-    if (opts.dPackRemove) this._dPackRemove = opts.dPackRemove
-    if (opts.dPackStat) this._dPackStat = opts.dPackStat
-    if (opts.dPackClose) this._dPackClose = opts.dPackClose
-    if (opts.dPackKill) this._dPackKill = opts.dPackKill
+    if (opts.dWebOpenReadonly) this._dWebOpenReadonly = opts.dWebOpenReadonly
+    if (opts.dWebOpen) this._dWebOpen = opts.dWebOpen
+    if (opts.dWebRead) this._dWebRead = opts.dWebRead
+    if (opts.dWebWrite) this._dWebWrite = opts.dWebWrite
+    if (opts.dWebRemove) this._dWebRemove = opts.dWebRemove
+    if (opts.dWebStat) this._dWebStat = opts.dWebStat
+    if (opts.dWebClose) this._dWebClose = opts.dWebClose
+    if (opts.dWebKill) this._dWebKill = opts.dWebKill
   }
 
-  this.dPackPreferReadonly = this._dPackOpenReadonly !== DPACK_OPEN_READONLY
-  this.dPackReadable = this._dPackRead !== DPACK_UNREADABLE
-  this.dPackWritable = this._dPackWrite !== DPACK_UNWRITABLE
-  this.dPackRemovable = this._dPackRemove !== DPACK_UNREMOVABLE
-  this.dPackStatable = this._dPackStat !== DPACK_UNTRACKABLE
+  this.dWebPreferReadonly = this._dWebOpenReadonly !== DPACK_OPEN_READONLY
+  this.dWebReadable = this._dWebRead !== DPACK_UNREADABLE
+  this.dWebWritable = this._dWebWrite !== DPACK_UNWRITABLE
+  this.dWebRemovable = this._dWebRemove !== DPACK_UNREMOVABLE
+  this.dWebStatable = this._dWebStat !== DPACK_UNTRACKABLE
 }
 
 inherits(DWebRandEntry, dwresEvents.EventEmitter)
 
-DWebRandEntry.prototype.dPackOpen = function (cb) {
+DWebRandEntry.prototype.dWebOpen = function (cb) {
   if (!cb) cb = noop
-  if (this.dPackOpened && !this._dPackNeedsOpen) return process.nextTick(cb, null)
+  if (this.dWebOpened && !this._dWebNeedsOpen) return process.nextTick(cb, null)
   queueAndRun(this, new DWREStorageRequest(this, 0, 0, 0, null, cb))
 }
 
-DWebRandEntry.prototype._dPackOpen = dPackDefaultImpl(null)
-DWebRandEntry.prototype._dPackOpenReadonly = DPACK_OPEN_READONLY
+DWebRandEntry.prototype._dWebOpen = dWebDefaultImpl(null)
+DWebRandEntry.prototype._dWebOpenReadonly = DPACK_OPEN_READONLY
 
-DWebRandEntry.prototype.dPackRead = function (offset, size, cb) {
+DWebRandEntry.prototype.dWebRead = function (offset, size, cb) {
   this.run(new DWREStorageRequest(this, 1, offset, size, null, cb))
 }
 
-DWebRandEntry.prototype._dPackRead = DPACK_UNREADABLE
+DWebRandEntry.prototype._dWebRead = DPACK_UNREADABLE
 
-DWebRandEntry.prototype.dPackWrite = function (offset, data, cb) {
+DWebRandEntry.prototype.dWebWrite = function (offset, data, cb) {
   if (!cb) cb = noop
-  dPackOpenWritable(this)
+  dWebOpenWritable(this)
   this.run(new DWREStorageRequest(this, 2, offset, data.length, data, cb))
 }
 
-DWebRandEntry.prototype._dPackWrite = DPACK_UNWRITABLE
+DWebRandEntry.prototype._dWebWrite = DPACK_UNWRITABLE
 
-DWebRandEntry.prototype.dPackRemove = function (offset, size, cb) {
+DWebRandEntry.prototype.dWebRemove = function (offset, size, cb) {
   if (!cb) cb = noop
-  dPackOpenWritable(this)
+  dWebOpenWritable(this)
   this.run(new DWREStorageRequest(this, 3, offset, size, null, cb))
 }
 
-DWebRandEntry.prototype._dPackRemove = DPACK_UNREMOVABLE
+DWebRandEntry.prototype._dWebRemove = DPACK_UNREMOVABLE
 
-DWebRandEntry.prototype.dPackStat = function (cb) {
+DWebRandEntry.prototype.dWebStat = function (cb) {
   this.run(new DWREStorageRequest(this, 4, 0, 0, null, cb))
 }
 
-DWebRandEntry.prototype._dPackStat = DPACK_UNTRACKABLE
+DWebRandEntry.prototype._dWebStat = DPACK_UNTRACKABLE
 
-DWebRandEntry.prototype.dPackClose = function (cb) {
+DWebRandEntry.prototype.dWebClose = function (cb) {
   if (!cb) cb = noop
-  if (this.dPackClosed) return process.nextTick(cb, null)
+  if (this.dWebClosed) return process.nextTick(cb, null)
   queueAndRun(this, new DWREStorageRequest(this, 5, 0, 0, null, cb))
 }
 
-DWebRandEntry.prototype._dPackClose = dPackDefaultImpl(null)
+DWebRandEntry.prototype._dWebClose = dWebDefaultImpl(null)
 
-DWebRandEntry.prototype.dPackKill = function (cb) {
+DWebRandEntry.prototype.dWebKill = function (cb) {
   if (!cb) cb = noop
-  if (!this.dPackClosed) this.dPackClose(noop)
+  if (!this.dWebClosed) this.dWebClose(noop)
   queueAndRun(this, new DWREStorageRequest(this, 6, 0, 0, null, cb))
 }
 
-DWebRandEntry.prototype._dPackKill = dPackDefaultImpl(null)
+DWebRandEntry.prototype._dWebKill = dWebDefaultImpl(null)
 
 DWebRandEntry.prototype.run = function (req) {
-  if (this._dPackNeedsOpen) this.dPackOpen(noop)
+  if (this._dWebNeedsOpen) this.dWebOpen(noop)
   if (this._queued.length) this._queued.push(req)
   else req._run()
 }
@@ -113,36 +113,36 @@ function DWREStorageRequest (self, type, offset, size, data, cb) {
 }
 
 DWREStorageRequest.prototype._unqueue = function (err) {
-  var dPackStorage = this.storage
-  var queued = dPackStorage._queued
+  var dWebStorage = this.storage
+  var queued = dWebStorage._queued
 
   if (!err) {
     switch (this.type) {
       case 0:
-        if (!dPackStorage.dPackOpened) {
-          dPackStorage.dPackOpened = true
-          dPackStorage.emit('dPack MemStorage Opened')
+        if (!dWebStorage.dWebOpened) {
+          dWebStorage.dWebOpened = true
+          dWebStorage.emit('dWeb MemStorage Opened')
         }
         break
 
       case 5:
-        if (!dPackStorage.dPackClosed) {
-          dPackStorage.dPackClosed = true
-          dPackStorage.emit('dPack MemStorage Closed')
+        if (!dWebStorage.dWebClosed) {
+          dWebStorage.dWebClosed = true
+          dWebStorage.emit('dWeb MemStorage Closed')
         }
         break
 
       case 6:
-        if (!dPackStorage.dPackKilled) {
-          dPackStorage.dPackKilled = true
-          dPackStorage.emit('dPack MemStorage Killed')
+        if (!dWebStorage.dWebKilled) {
+          dWebStorage.dWebKilled = true
+          dWebStorage.emit('dWeb MemStorage Killed')
         }
         break
     }
   }
 
   if (queued.length && queued[0] === this) queued.shift()
-  if (!--dPackStorage._pending && queued.length) queued[0]._run()
+  if (!--dWebStorage._pending && queued.length) queued[0]._run()
 }
 
 DWREStorageRequest.prototype.callback = function (err, val) {
@@ -151,60 +151,60 @@ DWREStorageRequest.prototype.callback = function (err, val) {
   this._callback(err, val)
 }
 
-DWREStorageRequest.prototype._dPackOpenAndNotClosed = function () {
-  var dPackStorage = this.storage
-  if (dPackStorage.dPackOpened && !dPackStorage.dPackClosed) return true
-  if (!dPackStorage.dPackOpened) nextTick(this, new Error('dPack MemFile Was Opened'))
-  else if (dPackStorage.dPackClosed) nextTick(this, new Error('dPack MemFile Was Closed'))
+DWREStorageRequest.prototype._dWebOpenAndNotClosed = function () {
+  var dWebStorage = this.storage
+  if (dWebStorage.dWebOpened && !dWebStorage.dWebClosed) return true
+  if (!dWebStorage.dWebOpened) nextTick(this, new Error('dWeb MemFile Was Opened'))
+  else if (dWebStorage.dWebClosed) nextTick(this, new Error('dWeb MemFile Was Closed'))
   return false
 }
 
-DWREStorageRequest.prototype._dPackOpen = function () {
-  var dPackStorage = this.storage
+DWREStorageRequest.prototype._dWebOpen = function () {
+  var dWebStorage = this.storage
 
-  if (dPackStorage.dPackOpened && !dPackStorage._dPackNeedsOpen) return nextTick(this, null)
-  if (dPackStorage.dPackClosed) return nextTick(this, new Error('dPack MemFile Was Closed'))
+  if (dWebStorage.dWebOpened && !dWebStorage._dWebNeedsOpen) return nextTick(this, null)
+  if (dWebStorage.dWebClosed) return nextTick(this, new Error('dWeb MemFile Was Closed'))
 
-  dPackStorage._dPackNeedsOpen = false
-  if (dPackStorage.dPackPreferReadonly) dPackStorage._dPackOpenReadonly(this)
-  else dPackStorage._dPackOpen(this)
+  dWebStorage._dWebNeedsOpen = false
+  if (dWebStorage.dWebPreferReadonly) dWebStorage._dWebOpenReadonly(this)
+  else dWebStorage._dWebOpen(this)
 }
 
 DWREStorageRequest.prototype._run = function () {
-  var dPackStorage = this.storage
-  dPackStorage._pending++
+  var dWebStorage = this.storage
+  dWebStorage._pending++
 
   this._sync = true
 
   switch (this.type) {
     case 0:
-      this._dPackOpen()
+      this._dWebOpen()
       break
 
     case 1:
-      if (this._dPackOpenAndNotClosed()) dPackStorage._dPackRead(this)
+      if (this._dWebOpenAndNotClosed()) dWebStorage._dWebRead(this)
       break
 
     case 2:
-      if (this._dPackOpenAndNotClosed()) dPackStorage._dPackWrite(this)
+      if (this._dWebOpenAndNotClosed()) dWebStorage._dWebWrite(this)
       break
 
     case 3:
-      if (this._dPackOpenAndNotClosed()) dPackStorage._dPackRemove(this)
+      if (this._dWebOpenAndNotClosed()) dWebStorage._dWebRemove(this)
       break
 
     case 4:
-      if (this._dPackOpenAndNotClosed()) dPackStorage._dPackStat(this)
+      if (this._dWebOpenAndNotClosed()) dWebStorage._dWebStat(this)
       break
 
     case 5:
-      if (dPackStorage.dPackClosed || !dPackStorage.dPackOpened) nextTick(this, null)
-      else dPackStorage._dPackClose(this)
+      if (dWebStorage.dWebClosed || !dWebStorage.dWebOpened) nextTick(this, null)
+      else dWebStorage._dWebClose(this)
       break
 
     case 6:
-      if (dPackStorage.dPackKilled) nextTick(this, null)
-      else dPackStorage._dPackKill(this)
+      if (dWebStorage.dWebKilled) nextTick(this, null)
+      else dWebStorage._dWebKill(this)
       break
   }
 
@@ -216,17 +216,17 @@ function queueAndRun (self, req) {
   if (!self._pending) req._run()
 }
 
-function dPackOpenWritable (self) {
-  if (self.dPackPreferReadonly) {
-    self._dPackNeedsOpen = true
-    self.dPackPreferReadonly = false
+function dWebOpenWritable (self) {
+  if (self.dWebPreferReadonly) {
+    self._dWebNeedsOpen = true
+    self.dWebPreferReadonly = false
   }
 }
 
-function dPackDefaultImpl (err) {
-  return dPackOverridable
+function dWebDefaultImpl (err) {
+  return dWebOverridable
 
-  function dPackOverridable (req) {
+  function dWebOverridable (req) {
     nextTick(req, err)
   }
 }
