@@ -1,33 +1,33 @@
-var dWebRandEntry = require('./')
+var DWRES = require('./')
 var fs = require('fs')
 
-var dPackFile = dPackFileReader('index.js')
+var file = fileReader('index.js')
 
-dPackFile.dPackRead(0, 10, (_, buf) => console.log('0-10: ' + buf.toString()))
-dPackFile.dPackRead(40, 15, (_, buf) => console.log('40-55: ' + buf.toString()))
-dPackFile.dPackClose()
+file.read(0, 10, (_, buf) => console.log('0-10: ' + buf.toString()))
+file.read(40, 15, (_, buf) => console.log('40-55: ' + buf.toString()))
+file.close()
 
-function dPackFileReader (dPackFileName) {
+function fileReader (name) {
   var fd = 0
-  return dWebRandEntry({
-    dPackOpen: function (req) {
-      fs.dPackOpen(dPackFileName, 'r', function (err, res) {
+  return DWRES({
+    open: function (req) {
+      fs.open(name, 'r', function (err, res) {
         if (err) return req.callback(err)
         fd = res
         req.callback(null)
       })
     },
-    dPackRead: function (req) {
+    read: function (req) {
       var buf = Buffer.allocUnsafe(req.size)
-      fs.dPackRead(fd, buf, 0, buf.length, req.offset, function (err, dPackRead) {
+      fs.read(fd, buf, 0, buf.length, req.offset, function (err, read) {
         if (err) return req.callback(err)
-        if (dPackRead < buf.length) return req.callback(new Error('Unable To Read From Memory'))
+        if (read < buf.length) return req.callback(new Error('Could not read'))
         req.callback(null, buf)
       })
     },
-    dPackClose: function (req) {
+    close: function (req) {
       if (!fd) return req.callback(null)
-      fs.dPackClose(fd, err => req.callback(err))
+      fs.close(fd, err => req.callback(err))
     }
   })
 }
